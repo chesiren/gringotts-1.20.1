@@ -6,6 +6,7 @@ import net.milkbowl.vault.economy.EconomyResponse.ResponseType;
 import org.bukkit.OfflinePlayer;
 import org.gestern.gringotts.Gringotts;
 import org.gestern.gringotts.Util;
+import org.gestern.gringotts.accountholder.AccountHolder;
 import org.gestern.gringotts.api.Account;
 import org.gestern.gringotts.api.Eco;
 import org.gestern.gringotts.api.TransactionResult;
@@ -63,9 +64,24 @@ public class VaultConnector implements Economy {
         return eco.getAccount(accountId).exists();
     }
 
+    /**
+     * Resolves an OfflinePlayer to a Gringotts Account.
+     * Uses the AccountHolderFactory UUID dispatch so that all registered providers
+     * (player, town, nation, ...) are tried in order. PlayerAccountHolderProvider
+     * returns null for UUIDs that have never played (e.g. fake Towny town players),
+     * allowing the town/nation providers registered by gringotts-towny to handle them.
+     */
+    private Account accountFor(OfflinePlayer offlinePlayer) {
+        AccountHolder holder = Gringotts.instance.getAccountHolderFactory().get(offlinePlayer.getUniqueId());
+        if (holder != null) {
+            return eco.custom(holder.getType(), holder.getId());
+        }
+        return eco.player(offlinePlayer.getUniqueId());
+    }
+
     @Override
     public boolean hasAccount(OfflinePlayer offlinePlayer) {
-        return eco.player(offlinePlayer.getUniqueId()).exists();
+        return accountFor(offlinePlayer).exists();
     }
 
     @Override
@@ -75,7 +91,7 @@ public class VaultConnector implements Economy {
 
     @Override
     public double getBalance(OfflinePlayer offlinePlayer) {
-        return eco.player(offlinePlayer.getUniqueId()).balance();
+        return accountFor(offlinePlayer).balance();
     }
 
     @Override
@@ -85,7 +101,7 @@ public class VaultConnector implements Economy {
 
     @Override
     public boolean has(OfflinePlayer offlinePlayer, double amount) {
-        return eco.account(offlinePlayer.getUniqueId().toString()).has(amount);
+        return accountFor(offlinePlayer).has(amount);
     }
 
     @Override
@@ -95,7 +111,7 @@ public class VaultConnector implements Economy {
 
     @Override
     public EconomyResponse withdrawPlayer(OfflinePlayer offlinePlayer, double amount) {
-        Account account = eco.player(offlinePlayer.getUniqueId());
+        Account account = accountFor(offlinePlayer);
         return withdrawPlayer(account, amount);
     }
 
@@ -122,7 +138,7 @@ public class VaultConnector implements Economy {
 
     @Override
     public EconomyResponse depositPlayer(OfflinePlayer offlinePlayer, double amount) {
-        Account account = eco.player(offlinePlayer.getUniqueId());
+        Account account = accountFor(offlinePlayer);
         return depositPlayer(account, amount);
     }
 
