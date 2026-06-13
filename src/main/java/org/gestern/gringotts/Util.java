@@ -35,7 +35,7 @@ public final class Util {
             return false;
         }
 
-        BlockState blockState = block.getState(true);
+        BlockState blockState = block.getState();
 
         return blockState instanceof Sign;
     }
@@ -87,7 +87,7 @@ public final class Util {
             return Optional.empty();
         }
 
-        BlockState blockState = block.getState(false);
+        BlockState blockState = block.getState();
 
         if (blockStateClass.isInstance(blockState)) {
             // noinspection unchecked

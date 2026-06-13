@@ -13,9 +13,6 @@ api: "1.20"
 softdepend: [ PlaceholderAPI ]
 loadbefore: [ Vault ]
 
-libraries:
-  - io.ebean:ebean-sqlite:15.4.0
-
 commands:
   vault:
     description: Accessing your vault commands

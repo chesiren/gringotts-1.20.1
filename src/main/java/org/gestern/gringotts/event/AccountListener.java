@@ -11,10 +11,16 @@ import org.bukkit.block.Sign;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
+import org.bukkit.block.Block;
+import org.bukkit.event.block.Action;
+import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.BlockDispenseEvent;
+import org.bukkit.event.block.BlockExplodeEvent;
 import org.bukkit.event.block.SignChangeEvent;
+import org.bukkit.event.entity.EntityExplodeEvent;
 import org.bukkit.event.inventory.InventoryCloseEvent;
 import org.bukkit.event.inventory.InventoryMoveItemEvent;
+import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.InventoryHolder;
 import org.bukkit.scheduler.BukkitRunnable;
@@ -22,10 +28,6 @@ import org.gestern.gringotts.AccountChest;
 import org.gestern.gringotts.Configuration;
 import org.gestern.gringotts.Gringotts;
 import org.gestern.gringotts.Util;
-
-import com.destroystokyo.paper.event.block.BlockDestroyEvent;
-
-import io.papermc.paper.event.player.PlayerOpenSignEvent;
 
 /**
  * Listens for chest creation, destruction and change events.
@@ -81,13 +83,31 @@ public class AccountListener implements Listener {
     }
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
-    public void onSignBreak(BlockDestroyEvent event) {
-        if (Tag.SIGNS.isTagged(event.getBlock().getType())) {
+    public void onSignBreak(BlockBreakEvent event) {
+        deleteChestIfSign(event.getBlock());
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void onSignEntityExplode(EntityExplodeEvent event) {
+        for (Block block : event.blockList()) {
+            deleteChestIfSign(block);
+        }
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void onSignBlockExplode(BlockExplodeEvent event) {
+        for (Block block : event.blockList()) {
+            deleteChestIfSign(block);
+        }
+    }
+
+    private void deleteChestIfSign(Block block) {
+        if (Tag.SIGNS.isTagged(block.getType())) {
             Gringotts.instance.getDao().deleteAccountChest(
-                event.getBlock().getWorld().getName(),
-                event.getBlock().getX(),
-                event.getBlock().getY(),
-                event.getBlock().getZ()
+                block.getWorld().getName(),
+                block.getX(),
+                block.getY(),
+                block.getZ()
             );
         }
     }
@@ -148,10 +168,13 @@ public class AccountListener implements Listener {
     }
 
     @EventHandler
-    public void onSignEdit(PlayerOpenSignEvent event) {
+    public void onSignEdit(PlayerInteractEvent event) {
+        if (event.getAction() != Action.RIGHT_CLICK_BLOCK) return;
+        if (event.getClickedBlock() == null) return;
+        if (!Tag.SIGNS.isTagged(event.getClickedBlock().getType())) return;
         for (AccountChest chest : Gringotts.instance.getDao().retrieveChests()) {
-            if (!chest.isChestLoaded()) continue; // For a sign to be changed, it needs to be loaded
-            if (event.getSign().getLocation().equals(chest.sign.getLocation())) {
+            if (!chest.isChestLoaded()) continue;
+            if (event.getClickedBlock().getLocation().equals(chest.sign.getLocation())) {
                 event.setCancelled(true);
                 return;
             }

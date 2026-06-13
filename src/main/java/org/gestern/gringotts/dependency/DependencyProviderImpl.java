@@ -51,7 +51,7 @@ public class DependencyProviderImpl implements DependencyProvider {
                     "Plugin %s hooked.", name
             ));
 
-            String version = plugin.getPluginMeta().getVersion();
+            String version = plugin.getDescription().getVersion();
 
             if (!Util.versionAtLeast(version, minVersion)) {
                 this.gringotts.getLogger().warning(String.format(

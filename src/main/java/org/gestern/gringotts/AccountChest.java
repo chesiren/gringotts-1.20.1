@@ -70,7 +70,7 @@ public class AccountChest {
         Block block = Util.chestBlock(sign);
 
         if (block != null) {
-            BlockState blockState = block.getState(false);
+            BlockState blockState = block.getState();
 
             if (blockState instanceof InventoryHolder) {
                 return (InventoryHolder) blockState;
@@ -102,7 +102,7 @@ public class AccountChest {
                 containerLocations.add(holder.getInventory().getLocation());
             }
         }
-        loc = loc.toBlockLocation();
+        loc = new Location(loc.getWorld(), loc.getBlockX(), loc.getBlockY(), loc.getBlockZ());
         return containerLocations.contains(loc);
     }
 
@@ -408,6 +408,13 @@ public class AccountChest {
      */
     public boolean isChestLoaded() {
         return sign.getWorld().isChunkLoaded(sign.getX()/16, sign.getZ()/16);
+    }
+
+    public void updateSign() {
+        Util.getBlockStateAs(sign.getBlock(), Sign.class).ifPresent(s -> {
+            s.setLine(2, account.owner.getName());
+            s.update();
+        });
     }
 
     public void setCachedBalance(long amount) {
