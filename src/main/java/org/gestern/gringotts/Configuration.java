@@ -2,6 +2,8 @@ package org.gestern.gringotts;
 
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
+import org.bukkit.NamespacedKey;
+import org.bukkit.Registry;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.MemoryConfiguration;
 import org.bukkit.configuration.file.FileConfiguration;
@@ -104,6 +106,20 @@ public enum Configuration {
         // TODO check for Vault dependency
         if (material != null) {
             return new ItemStack(material);
+        }
+
+        // Fallback for modded items (e.g. Forge items on ArcLight/Mohist) via NamespacedKey registry lookup
+        if (name.contains(":")) {
+            String[] parts = name.split(":", 2);
+            try {
+                NamespacedKey key = new NamespacedKey(parts[0], parts[1]);
+                material = Registry.MATERIAL.get(key);
+                if (material != null) {
+                    return new ItemStack(material);
+                }
+            } catch (IllegalArgumentException ignored) {
+                // invalid NamespacedKey format
+            }
         }
 
         throw new GringottsConfigurationException("Unable to identify denomination item by name or id: " + name);
