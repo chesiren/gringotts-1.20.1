@@ -6,8 +6,10 @@ import java.util.regex.Pattern;
 
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
+import org.bukkit.Material;
 import org.bukkit.Tag;
 import org.bukkit.block.Sign;
+import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
@@ -18,16 +20,22 @@ import org.bukkit.event.block.BlockDispenseEvent;
 import org.bukkit.event.block.BlockExplodeEvent;
 import org.bukkit.event.block.SignChangeEvent;
 import org.bukkit.event.entity.EntityExplodeEvent;
+import org.bukkit.event.inventory.InventoryAction;
+import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryCloseEvent;
+import org.bukkit.event.inventory.InventoryDragEvent;
 import org.bukkit.event.inventory.InventoryMoveItemEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.InventoryHolder;
+import org.bukkit.inventory.ItemStack;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.gestern.gringotts.AccountChest;
 import org.gestern.gringotts.Configuration;
 import org.gestern.gringotts.Gringotts;
+import org.gestern.gringotts.Language;
 import org.gestern.gringotts.Util;
+import org.gestern.gringotts.currency.GringottsCurrency;
 
 /**
  * Listens for chest creation, destruction and change events.
@@ -75,6 +83,18 @@ public class AccountListener implements Listener {
         );
 
         if (optionalSign.isPresent() && Util.chestBlock(optionalSign.get()) != null) {
+            // Block vault creation if the chest already contains non-currency items
+            Block chestBlock = Util.chestBlock(optionalSign.get());
+            if (chestBlock.getState() instanceof InventoryHolder inventoryHolder) {
+                GringottsCurrency currency = Configuration.CONF.getCurrency();
+                for (ItemStack item : inventoryHolder.getInventory().getContents()) {
+                    if (item != null && item.getType() != Material.AIR && currency.getValue(item) == 0) {
+                        event.getPlayer().sendMessage(Language.LANG.vault_onlyCurrency);
+                        return;
+                    }
+                }
+            }
+
             // we made it this far, throw the event to manage vault creation
             final VaultCreationEvent creation = new PlayerVaultCreationEvent(type, event);
 
@@ -178,6 +198,81 @@ public class AccountListener implements Listener {
                 event.setCancelled(true);
                 return;
             }
+        }
+    }
+
+    @EventHandler(priority = EventPriority.NORMAL, ignoreCancelled = true)
+    public void onInventoryClick(InventoryClickEvent event) {
+        if (!Util.isValidInventory(event.getInventory().getType())) return;
+        AccountChest chest = getAccountChestFromHolder(event.getInventory());
+        if (chest == null) return;
+
+        GringottsCurrency currency = Configuration.CONF.getCurrency();
+        ItemStack itemToPlace = null;
+
+        boolean clickedInVault = event.getClickedInventory() != null
+                && event.getClickedInventory().equals(event.getInventory());
+        boolean clickedInPlayer = event.getClickedInventory() != null
+                && !event.getClickedInventory().equals(event.getInventory());
+
+        InventoryAction action = event.getAction();
+        switch (action) {
+            case PLACE_ALL:
+            case PLACE_ONE:
+            case PLACE_SOME:
+            case SWAP_WITH_CURSOR:
+                if (clickedInVault) itemToPlace = event.getCursor();
+                break;
+            case MOVE_TO_OTHER_INVENTORY:
+                if (clickedInPlayer) itemToPlace = event.getCurrentItem();
+                break;
+            case HOTBAR_SWAP:
+                if (clickedInVault) {
+                    int hotbarSlot = event.getHotbarButton();
+                    Player player = (Player) event.getWhoClicked();
+                    itemToPlace = hotbarSlot >= 0
+                            ? player.getInventory().getItem(hotbarSlot)
+                            : player.getInventory().getItemInOffHand();
+                }
+                break;
+            default:
+                break;
+        }
+
+        if (itemToPlace != null && itemToPlace.getType() != Material.AIR && currency.getValue(itemToPlace) == 0) {
+            event.setCancelled(true);
+            event.getWhoClicked().sendMessage(Language.LANG.vault_onlyCurrency);
+        }
+    }
+
+    @EventHandler(priority = EventPriority.NORMAL, ignoreCancelled = true)
+    public void onInventoryDrag(InventoryDragEvent event) {
+        if (!Util.isValidInventory(event.getInventory().getType())) return;
+        AccountChest chest = getAccountChestFromHolder(event.getInventory());
+        if (chest == null) return;
+
+        // getInventorySlots() returns only slots in the top (vault) inventory
+        if (event.getInventorySlots().isEmpty()) return;
+
+        GringottsCurrency currency = Configuration.CONF.getCurrency();
+        ItemStack dragged = event.getOldCursor();
+        if (dragged != null && dragged.getType() != Material.AIR && currency.getValue(dragged) == 0) {
+            event.setCancelled(true);
+            event.getWhoClicked().sendMessage(Language.LANG.vault_onlyCurrency);
+        }
+    }
+
+    @EventHandler(priority = EventPriority.NORMAL, ignoreCancelled = true)
+    public void onInventoryMoveItemBlock(InventoryMoveItemEvent event) {
+        if (event.getDestination() == null) return;
+        if (!Util.isValidInventory(event.getDestination().getType())) return;
+        AccountChest chest = getAccountChestFromHolder(event.getDestination());
+        if (chest == null) return;
+
+        GringottsCurrency currency = Configuration.CONF.getCurrency();
+        ItemStack item = event.getItem();
+        if (item != null && item.getType() != Material.AIR && currency.getValue(item) == 0) {
+            event.setCancelled(true);
         }
     }
 

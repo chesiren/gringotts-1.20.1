@@ -60,6 +60,7 @@ public enum Language {
     public String vault_created;
     public String vault_error;
     public String vault_noVaultPerm;
+    public String vault_onlyCurrency;
     //vault plugin
     public String plugin_vault_insufficientFunds;
     public String plugin_vault_insufficientSpace;
@@ -191,6 +192,9 @@ public enum Language {
         LANG.vault_error = translator.apply(
                 "vault.error",
                 "Failed to create vault.");
+        LANG.vault_onlyCurrency = translator.apply(
+                "vault.onlyCurrency",
+                "Only currency items are allowed in vault chests.");
 
         //vault plugin
         LANG.plugin_vault_insufficientFunds = translator.apply(

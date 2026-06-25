@@ -61,6 +61,7 @@ vault:
     created: "Created vault successfully."
     error: "Failed to create vault."
     noVaultPerm: "You do not have permission to create vaults here."
+    onlyCurrency: "Only currency items are allowed in vault chests."
 
 plugins:
     vault:
