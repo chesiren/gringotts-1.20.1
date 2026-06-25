@@ -1,5 +1,6 @@
 package org.gestern.gringotts;
 
+import org.bukkit.Material;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.gestern.gringotts.currency.Denomination;
@@ -34,6 +35,19 @@ public class AccountInventory {
         }
 
         return count;
+    }
+
+    /**
+     * Returns true if this inventory cannot accept any more currency items.
+     * A vault is considered full when every slot is occupied by a currency stack at max size.
+     */
+    public boolean isFull() {
+        GringottsCurrency cur = Configuration.CONF.getCurrency();
+        for (ItemStack stack : inventory) {
+            if (stack == null || stack.getType() == Material.AIR) return false;
+            if (cur.getValue(stack) > 0 && stack.getAmount() < stack.getMaxStackSize()) return false;
+        }
+        return true;
     }
 
     /**

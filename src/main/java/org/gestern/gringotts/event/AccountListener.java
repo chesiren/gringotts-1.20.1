@@ -26,6 +26,10 @@ import org.bukkit.event.inventory.InventoryCloseEvent;
 import org.bukkit.event.inventory.InventoryDragEvent;
 import org.bukkit.event.inventory.InventoryMoveItemEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
+import org.bukkit.event.player.PlayerJoinEvent;
+import org.gestern.gringotts.AccountInventory;
+import org.gestern.gringotts.GringottsAccount;
+import org.gestern.gringotts.accountholder.PlayerAccountHolder;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.InventoryHolder;
 import org.bukkit.inventory.ItemStack;
@@ -199,6 +203,32 @@ public class AccountListener implements Listener {
                 return;
             }
         }
+    }
+
+    @EventHandler
+    public void onPlayerJoin(PlayerJoinEvent event) {
+        Player player = event.getPlayer();
+        new BukkitRunnable() {
+            @Override
+            public void run() {
+                GringottsAccount account = Gringotts.instance.getAccounting()
+                        .getAccount(new PlayerAccountHolder(player));
+                for (AccountChest chest : Gringotts.instance.getDao().retrieveChests(account)) {
+                    if (!chest.isChestLoaded()) continue;
+                    InventoryHolder inv = chest.chest();
+                    if (inv == null) continue;
+                    if (new AccountInventory(inv.getInventory()).isFull()) {
+                        org.bukkit.Location loc = chest.chestLocation();
+                        if (loc == null) continue;
+                        player.sendMessage(Language.LANG.vault_full
+                                .replace("%world", loc.getWorld().getName())
+                                .replace("%x", String.valueOf(loc.getBlockX()))
+                                .replace("%y", String.valueOf(loc.getBlockY()))
+                                .replace("%z", String.valueOf(loc.getBlockZ())));
+                    }
+                }
+            }
+        }.runTaskLater(Gringotts.instance, 20L);
     }
 
     @EventHandler(priority = EventPriority.NORMAL, ignoreCancelled = true)

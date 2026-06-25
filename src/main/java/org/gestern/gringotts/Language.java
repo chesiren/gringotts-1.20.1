@@ -61,6 +61,7 @@ public enum Language {
     public String vault_error;
     public String vault_noVaultPerm;
     public String vault_onlyCurrency;
+    public String vault_full;
     //vault plugin
     public String plugin_vault_insufficientFunds;
     public String plugin_vault_insufficientSpace;
@@ -195,6 +196,9 @@ public enum Language {
         LANG.vault_onlyCurrency = translator.apply(
                 "vault.onlyCurrency",
                 "Only currency items are allowed in vault chests.");
+        LANG.vault_full = translator.apply(
+                "vault.full",
+                "Warning: your vault is full! (%world %x, %y, %z)");
 
         //vault plugin
         LANG.plugin_vault_insufficientFunds = translator.apply(

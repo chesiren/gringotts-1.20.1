@@ -62,6 +62,7 @@ vault:
     error: "Failed to create vault."
     noVaultPerm: "You do not have permission to create vaults here."
     onlyCurrency: "Only currency items are allowed in vault chests."
+    full: "Warning: your vault is full! (%world %x, %y, %z)"
 
 plugins:
     vault:
