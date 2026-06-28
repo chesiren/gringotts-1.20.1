@@ -2,6 +2,7 @@ package org.gestern.gringotts;
 
 import org.gestern.gringotts.accountholder.AccountHolder;
 
+import java.util.ArrayList;
 import java.util.Collection;
 
 /**
@@ -54,7 +55,7 @@ public class Accounting {
      */
     public boolean addChest(AccountChest chest) {
         // TODO refactor to do a more intelligent/quick query
-        Collection<AccountChest> allChests = Gringotts.instance.getDao().retrieveChests();
+        Collection<AccountChest> allChests = new ArrayList<>(Gringotts.instance.getDao().retrieveChests());
 
         // if there is an invalid stored chest on location of new chest, remove it from storage.
         if (allChests.contains(chest)) {
